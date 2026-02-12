@@ -1,14 +1,17 @@
-import {Body, Controller, Get, Param, ParseIntPipe, Post, Delete, Put} from '@nestjs/common'
+import {Body, Controller, Get, Param, ParseIntPipe, Post, Delete, Patch} from '@nestjs/common'
 import { UserService } from './user.service'
 import { User } from '../../models/entities/user.entity';
+import { CreateUserDto } from '../dto/user.dto.create';
+import { UpdateUserDto } from '../dto/user.dto.update';
 
-@Controller('user')
+
+@Controller('users')
 export class UserController {
     constructor(private readonly userService: UserService){}
-
+    
     @Post()
-    async create(@Body() body:{email: string, senha:string}){
-        return this.userService.createUser(body.email, body.senha)
+    async create(@Body() createUserDto:CreateUserDto){
+        return this.userService.createUser(createUserDto)
     }
 
     @Get()
@@ -26,11 +29,11 @@ export class UserController {
         return this.userService.deleteUser(id)
     }    
 
-    @Put(':id')
-    async put(@Param('id', ParseIntPipe) id:number, 
-              @Body()body:{email: string, senha:string}
+    @Patch(':id')
+    async patch(@Param('id', ParseIntPipe) id:number, 
+              @Body() updateUserDto:UpdateUserDto
             ):Promise<User>{
-        const{email, senha} = body
-        return this.userService.putUser(id, email, senha)
+        
+        return this.userService.patchUser(id, updateUserDto)
     }
 }

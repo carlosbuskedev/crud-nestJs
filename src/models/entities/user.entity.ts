@@ -9,6 +9,6 @@ export class User{
     @Column()
     email!: string
 
-     @Column()
+     @Column({select:false})
     senha!: string
 }

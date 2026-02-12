@@ -2,6 +2,9 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "../../models/entities/user.entity";
 import { Repository } from "typeorm";
+import { CreateUserDto } from "../dto/user.dto.create";
+import { UpdateUserDto } from "../dto/user.dto.update";
+import * as bcrypt from 'bcrypt';
 
 @Injectable() // parecido com o @service do spring
 export class UserService {
@@ -9,10 +12,16 @@ export class UserService {
         @InjectRepository(User)
         private userRepository: Repository<User>
     ){}
+  
+  async  createUser(createUserDto: CreateUserDto): Promise<string>{
+        const createUser = this.userRepository.create(createUserDto)
 
-  async  createUser(email: string, senha:string): Promise<User>{
-        const createUser = this.userRepository.create({email, senha})
-        return await this.userRepository.save(createUser)
+        createUser.senha = await bcrypt.hash(createUser.senha + this.getPepper(), this.getRounds())
+        
+         await this.userRepository.save(createUser)
+
+         return createUser.email
+        
     }
 
   async findAllUsers():Promise<User[]>{
@@ -32,15 +41,25 @@ export class UserService {
     await this.userRepository.remove(findTodelete)
     return findTodelete;
   }
-  async putUser(id: number, email: string, senha:string):Promise<User>{
+  async patchUser(id: number, updateUserDto:UpdateUserDto ):Promise<User>{
     const findUserToChange = await this.userRepository.findOne({where:{id}})
     if(!findUserToChange){
         throw new NotFoundException('usuário não encontrado')
     }
 
-    findUserToChange.email = email
-    findUserToChange.senha = senha
+    if(updateUserDto.email !== undefined ) findUserToChange.email = updateUserDto.email
 
+    if(updateUserDto.senha !== undefined ) { 
+        
+      findUserToChange.senha = await bcrypt.hash(updateUserDto.senha + this.getPepper(), this.getRounds())
+    }
     return await this.userRepository.save(findUserToChange)
+  }
+
+  private getRounds(){
+    return  Number(process.env.BCRYPT_ROUNDS ?? 12)
+  }
+  private getPepper(){
+    return process.env.BCRYPT_PEPPER ?? ""
   }
 }
